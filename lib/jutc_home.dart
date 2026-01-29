@@ -1,7 +1,7 @@
 import 'dart:math' as math;
-
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
-
+import 'package:pdfx/pdfx.dart';
 import 'jutc_data.dart';
 
 class JutcHomePage extends StatefulWidget {
@@ -11,16 +11,28 @@ class JutcHomePage extends StatefulWidget {
   State<JutcHomePage> createState() => _JutcHomePageState();
 }
 
-class _JutcHomePageState extends State<JutcHomePage> {
+class _JutcHomePageState extends State<JutcHomePage>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   String _routeFilter = 'all';
   String _query = '';
+  late AnimationController _bounceController;
 
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _bounceController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    _bounceController.dispose();
     super.dispose();
   }
 
@@ -59,16 +71,8 @@ class _JutcHomePageState extends State<JutcHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF07101D),
-              Color(0xFF060A12),
-              Color(0xFF070C15),
-            ],
-          ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
         ),
         child: Center(
           child: LayoutBuilder(
@@ -80,22 +84,22 @@ class _JutcHomePageState extends State<JutcHomePage> {
                 width: width,
                 height: height,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0B1220),
-                  borderRadius: BorderRadius.circular(34),
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.12),
+                    color: Theme.of(context).colorScheme.outlineVariant,
                   ),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                      color: Colors.black54,
-                      blurRadius: 40,
-                      offset: Offset(0, 20),
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 32,
+                      offset: const Offset(0, 16),
                     ),
                   ],
                 ),
                 child: Column(
                   children: [
-                    _TopBar(
+                    _Material3TopBar(
                       controller: _searchController,
                       onChanged: (value) {
                         setState(() {
@@ -106,38 +110,38 @@ class _JutcHomePageState extends State<JutcHomePage> {
                     Expanded(
                       child: ClipRRect(
                         borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(34),
+                          bottom: Radius.circular(28),
                         ),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                const Color(0xFF0B1220),
-                                const Color(0xFF0B1220)
-                                    .withOpacity(0.9),
-                              ],
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.all(16),
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 400),
+                                  transitionBuilder:
+                                      (child, animation) {
+                                    return ScaleTransition(
+                                      scale: animation,
+                                      child: child,
+                                    );
+                                  },
                                   child: _buildPage(context),
                                 ),
                               ),
-                              _BottomNav(
-                                currentIndex: _currentIndex,
-                                onTap: (index) {
-                                  setState(() {
-                                    _currentIndex = index;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
+                            ),
+                            _Material3BottomNav(
+                              currentIndex: _currentIndex,
+                              onTap: (index) {
+                                setState(() {
+                                  _currentIndex = index;
+                                });
+                                _bounceController.forward().then((_) {
+                                  _bounceController.reset();
+                                });
+                              },
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -154,14 +158,14 @@ class _JutcHomePageState extends State<JutcHomePage> {
   Widget _buildPage(BuildContext context) {
     switch (_currentIndex) {
       case 0:
-        return _HomeContent(
+        return _Material3HomeContent(
           onOpenRoutes: () => setState(() => _currentIndex = 1),
           onOpenTrack: () => setState(() => _currentIndex = 2),
           onOpenSaved: () => setState(() => _currentIndex = 3),
           onOpenTerms: () => _showTerms(context),
         );
       case 1:
-        return _RoutesContent(
+        return _Material3RoutesContent(
           routes: _filteredRoutes,
           filter: _routeFilter,
           onFilterChanged: (value) {
@@ -172,11 +176,11 @@ class _JutcHomePageState extends State<JutcHomePage> {
           onOpenTerms: () => _showTerms(context),
         );
       case 2:
-        return const _TrackContent();
+        return const _Material3TrackContent();
       case 3:
-        return const _SavedContent();
+        return const _Material3SavedContent();
       case 4:
-        return _SettingsContent(onOpenTerms: () => _showTerms(context));
+        return _Material3SettingsContent(onOpenTerms: () => _showTerms(context));
       default:
         return const SizedBox.shrink();
     }
@@ -185,29 +189,27 @@ class _JutcHomePageState extends State<JutcHomePage> {
   void _showTerms(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF141A28),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 'Terms and Credits',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 16),
               Text(
-                'Schedule links are based on official JUTC timetable PDFs. Live '
-                'tracking is a mock experience and requires device location '
-                'permissions in a production build.',
-                style: TextStyle(color: Color(0xFFB6C1D6), height: 1.4),
+                'Schedule links are based on official JUTC timetable PDFs. Live tracking is a mock experience and requires device location permissions in a production build.',
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 24),
             ],
           ),
         );
@@ -216,8 +218,11 @@ class _JutcHomePageState extends State<JutcHomePage> {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.controller, required this.onChanged});
+class _Material3TopBar extends StatelessWidget {
+  const _Material3TopBar({
+    required this.controller,
+    required this.onChanged,
+  });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
@@ -225,76 +230,79 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF121A2A),
-            const Color(0xFF0B1220).withOpacity(0.95),
-          ],
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(34)),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border(
-          bottom: BorderSide(color: Colors.white.withOpacity(0.12)),
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 54,
-                height: 34,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1B7D3A).withOpacity(0.2),
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.directions_bus, size: 20),
+                child: Icon(
+                  Icons.directions_bus,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  size: 24,
+                ),
               ),
-              const SizedBox(width: 10),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'JUTC SmartRide',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Schedules, routes, and tracking',
-                    style: TextStyle(color: Color(0xFFB6C1D6), fontSize: 11),
-                  ),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'JUTC SmartRide',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    Text(
+                      'Routes & Schedules',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          const Spacer(),
-          SizedBox(
-            width: 160,
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              style: const TextStyle(fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'Search routes',
-                hintStyle: const TextStyle(color: Color(0xFF9AA6BF)),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.06),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.14)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(999),
-                  borderSide: const BorderSide(color: Color(0xFF1B7D3A)),
-                ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller,
+            onChanged: onChanged,
+            style: Theme.of(context).textTheme.bodyMedium,
+            decoration: InputDecoration(
+              hintText: 'Search routes...',
+              prefixIcon: Icon(
+                Icons.search,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
+              suffixIcon: controller.text.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () {
+                        controller.clear();
+                        onChanged('');
+                      },
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  : null,
             ),
           ),
         ],
@@ -303,8 +311,11 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _BottomNav extends StatelessWidget {
-  const _BottomNav({required this.currentIndex, required this.onTap});
+class _Material3BottomNav extends StatelessWidget {
+  const _Material3BottomNav({
+    required this.currentIndex,
+    required this.onTap,
+  });
 
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -312,51 +323,71 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = const [
-      _NavItem(icon: Icons.home_outlined, label: 'Home'),
-      _NavItem(icon: Icons.route_outlined, label: 'Routes'),
-      _NavItem(icon: Icons.location_on_outlined, label: 'Track'),
-      _NavItem(icon: Icons.bookmark_border, label: 'Saved'),
-      _NavItem(icon: Icons.settings_outlined, label: 'Settings'),
+      _NavItem(icon: Icons.home_rounded, label: 'Home'),
+      _NavItem(icon: Icons.route_rounded, label: 'Routes'),
+      _NavItem(icon: Icons.location_on_rounded, label: 'Track'),
+      _NavItem(icon: Icons.bookmark_rounded, label: 'Saved'),
+      _NavItem(icon: Icons.settings_rounded, label: 'Settings'),
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.12))),
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: List.generate(
           items.length,
           (index) {
             final selected = index == currentIndex;
             final item = items[index];
             return Expanded(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: () => onTap(index),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      item.icon,
-                      size: 22,
-                      color: selected
-                          ? Colors.white
-                          : const Color(0xFF9AA6BF),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => onTap(index),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedScale(
+                          scale: selected ? 1.2 : 1.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            item.icon,
+                            size: 24,
+                            color: selected
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.label,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: selected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                fontWeight: selected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                              ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: selected
-                            ? Colors.white
-                            : const Color(0xFF9AA6BF),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             );
@@ -374,8 +405,8 @@ class _NavItem {
   final String label;
 }
 
-class _HomeContent extends StatelessWidget {
-  const _HomeContent({
+class _Material3HomeContent extends StatelessWidget {
+  const _Material3HomeContent({
     required this.onOpenRoutes,
     required this.onOpenTrack,
     required this.onOpenSaved,
@@ -391,103 +422,195 @@ class _HomeContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _CardContainer(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF203A1C), Color(0xFF0B1220)],
+        // Hero card
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).colorScheme.primaryContainer,
+                  Theme.of(context)
+                      .colorScheme
+                      .primaryContainer
+                      .withOpacity(0.6),
+                ],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimaryContainer
+                        .withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ),
-                child: Center(
                   child: Icon(
-                    Icons.directions_bus,
-                    size: 72,
-                    color: Colors.white.withOpacity(0.85),
+                    Icons.directions_bus_filled,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    size: 32,
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Find routes, view schedules, and track your trip',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Schedule links are based on official JUTC timetable PDFs. Use '
-                'Track for your live location and a demo bus marker.',
-                style: TextStyle(color: Color(0xFFB6C1D6), height: 1.4),
-              ),
-              const SizedBox(height: 16),
-              _PrimaryButton(
-                label: 'Browse routes',
-                subtitle: 'Search and filter',
+                const SizedBox(height: 16),
+                Text(
+                  'Plan Your Journey',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color:
+                            Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Find JUTC routes, view schedules, and track your bus in real-time.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimaryContainer
+                            .withOpacity(0.8),
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Action buttons
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.icon(
                 onPressed: onOpenRoutes,
+                icon: const Icon(Icons.route_rounded),
+                label: const Text('Browse Routes'),
               ),
-              const SizedBox(height: 10),
-              _TonalButton(
-                label: 'Premium combined schedule',
-                subtitle: 'Open PDF',
-                onPressed: () {},
-              ),
-              const SizedBox(height: 10),
-              _TonalButton(
-                label: 'Where is my bus?',
-                subtitle: 'Map view',
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.tonalIcon(
                 onPressed: onOpenTrack,
+                icon: const Icon(Icons.map_rounded),
+                label: const Text('Track Bus'),
               ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Saved routes card
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Saved Routes',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(
+                          'Quick access to favorites',
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelSmall
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer
+                            .withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '0 saved',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                FilledButton.tonal(
+                  onPressed: onOpenSaved,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.bookmark_rounded),
+                      SizedBox(width: 8),
+                      Text('View Saved Routes'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 16),
-        _CardContainer(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Column(
+        // Info card
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Saved',
-                        style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 1.5,
-                          color: Color(0xFF9AA6BF),
-                        ),
+                        'About PDFs',
+                        style: Theme.of(context).textTheme.labelLarge,
                       ),
-                      SizedBox(height: 4),
                       Text(
-                        'Quick access',
-                        style:
-                            TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                        'Schedule PDFs open in-app. Some formats may need to open in a new tab.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelSmall
+                            ?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                       ),
                     ],
                   ),
-                  _Badge(label: '0 saved'),
-                ],
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Save routes you use often. Open a route and tap Save.',
-                style: TextStyle(color: Color(0xFFB6C1D6)),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  _GhostButton(label: 'Open saved routes', onPressed: onOpenSaved),
-                  _GhostButton(label: 'Terms and credits', onPressed: onOpenTerms),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -495,8 +618,8 @@ class _HomeContent extends StatelessWidget {
   }
 }
 
-class _RoutesContent extends StatelessWidget {
-  const _RoutesContent({
+class _Material3RoutesContent extends StatelessWidget {
+  const _Material3RoutesContent({
     required this.routes,
     required this.filter,
     required this.onFilterChanged,
@@ -510,209 +633,537 @@ class _RoutesContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _CardContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Routes',
-                    style: TextStyle(
-                      fontSize: 12,
-                      letterSpacing: 1.5,
-                      color: Color(0xFF9AA6BF),
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Search and open schedules',
-                    style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Text(
+          'Find Routes',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-              _Badge(label: '${routes.length} results'),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Search ${routes.length} available routes',
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 16),
+        // Filter chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
             children: [
               _FilterChip(
                 label: 'All',
                 selected: filter == 'all',
                 onTap: () => onFilterChanged('all'),
               ),
+              const SizedBox(width: 8),
               _FilterChip(
                 label: 'Standard',
                 selected: filter == 'standard',
                 onTap: () => onFilterChanged('standard'),
               ),
+              const SizedBox(width: 8),
               _FilterChip(
                 label: 'Premium',
                 selected: filter == 'premium',
                 onTap: () => onFilterChanged('premium'),
               ),
+              const SizedBox(width: 8),
               _FilterChip(
-                label: 'Rural/Express',
+                label: 'Rural',
                 selected: filter == 'rural',
                 onTap: () => onFilterChanged('rural'),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: routes.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final route = routes[index];
-              return _RouteTile(route: route);
-            },
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'If a route PDF fails to display in-app, use Open in new tab.',
-            style: TextStyle(color: Color(0xFF9AA6BF), fontSize: 12),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+        ),
+        const SizedBox(height: 16),
+        // Routes list
+        Expanded(
+          child: routes.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.route_rounded,
+                        size: 56,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withOpacity(0.5),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No routes found',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: routes.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    return _Material3RouteTile(
+                      route: routes[index],
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Material3RouteTile extends StatefulWidget {
+  const _Material3RouteTile({required this.route});
+
+  final RouteInfo route;
+
+  @override
+  State<_Material3RouteTile> createState() => _Material3RouteTileState();
+}
+
+class _Material3RouteTileState extends State<_Material3RouteTile> {
+  bool _showPdf = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showPdf) {
+      return _PdfViewer(url: widget.route.pdf, routeNumber: widget.route.route);
+    }
+
+    return Card(
+      child: InkWell(
+        onTap: () => setState(() => _showPdf = true),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _TonalButton(label: 'Open premium combined schedule', onPressed: () {}),
-              _GhostButton(label: 'Terms and credits', onPressed: onOpenTerms),
+              Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.secondary,
+                          Theme.of(context)
+                              .colorScheme
+                              .secondary
+                              .withOpacity(0.7),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.route.route,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: Theme.of(context).colorScheme.onSecondary,
+                            ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${widget.route.origin} → ${widget.route.destination}',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.route.via,
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelSmall
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _TrackContent extends StatelessWidget {
-  const _TrackContent();
+class _PdfViewer extends StatefulWidget {
+  const _PdfViewer({required this.url, required this.routeNumber});
+
+  final String url;
+  final String routeNumber;
+
+  @override
+  State<_PdfViewer> createState() => _PdfViewerState();
+}
+
+class _PdfViewerState extends State<_PdfViewer> {
+  late PdfControllerPinch _pdfController;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initPdf();
+  }
+
+  Future<void> _initPdf() async {
+    try {
+      _pdfController = PdfControllerPinch(
+        document: await PdfDocument.openFile(widget.url),
+      );
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to load PDF'),
+            action: SnackBarAction(
+              label: 'Dismiss',
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pdfController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return _CardContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Track your trip',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'View your live location and a demo bus marker on a map preview.',
-            style: TextStyle(color: Color(0xFFB6C1D6)),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            height: 240,
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F1624),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.12)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            FilledButton.tonalIcon(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.arrow_back_rounded),
+              label: const Text('Back'),
             ),
-            child: const Center(
-              child: Icon(Icons.map_outlined, size: 48, color: Color(0xFF9AA6BF)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Route ${widget.routeNumber} Schedule',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_isLoading)
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading PDF...',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          )
+        else
+          Expanded(
+            child: PdfViewPinch(
+              controller: _pdfController,
+              builders: PdfViewPinchBuilders<PdfViewPinchController>(
+                builder: (context, futureDocument, state) {
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            children: const [
-              _GhostButton(label: 'Enable location', onPressed: null),
-              _GhostButton(label: 'Center on bus', onPressed: null),
-            ],
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
 
-class _SavedContent extends StatelessWidget {
-  const _SavedContent();
+class _Material3TrackContent extends StatelessWidget {
+  const _Material3TrackContent();
 
   @override
   Widget build(BuildContext context) {
-    return _CardContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
-            'Saved routes',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Track Your Bus',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'See your live location and bus position on the map',
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: Card(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceVariant
+                    .withOpacity(0.5),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.map_rounded,
+                      size: 64,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant
+                          .withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Map Preview',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Real-time tracking coming soon',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-          SizedBox(height: 8),
-          Text(
-            'You have no saved routes yet. Open a route and tap Save to pin it here.',
-            style: TextStyle(color: Color(0xFFB6C1D6)),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.tonal(
+                onPressed: () {},
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.location_on_rounded),
+                    SizedBox(width: 8),
+                    Text('Enable Location'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.tonal(
+                onPressed: () {},
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.my_location_rounded),
+                    SizedBox(width: 8),
+                    Text('Center Bus'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
 
-class _SettingsContent extends StatelessWidget {
-  const _SettingsContent({required this.onOpenTerms});
+class _Material3SavedContent extends StatelessWidget {
+  const _Material3SavedContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Saved Routes',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Your favorite routes for quick access',
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 32),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.bookmark_outline_rounded,
+                size: 64,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withOpacity(0.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No saved routes yet',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tap the save icon on any route to add it here',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Material3SettingsContent extends StatelessWidget {
+  const _Material3SettingsContent({required this.onOpenTerms});
 
   final VoidCallback onOpenTerms;
 
   @override
   Widget build(BuildContext context) {
-    return _CardContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Preferences',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Customize theme, motion, and text scaling.',
-            style: TextStyle(color: Color(0xFFB6C1D6)),
-          ),
-          const SizedBox(height: 12),
-          _SettingTile(
-            icon: Icons.brightness_6_outlined,
-            title: 'Theme',
-            subtitle: 'System default',
-            onTap: () {},
-          ),
-          _SettingTile(
-            icon: Icons.motion_photos_on_outlined,
-            title: 'Motion',
-            subtitle: 'Bouncy',
-            onTap: () {},
-          ),
-          _SettingTile(
-            icon: Icons.text_fields,
-            title: 'Text size',
-            subtitle: 'Normal',
-            onTap: () {},
-          ),
-          const SizedBox(height: 12),
-          _GhostButton(label: 'Terms and credits', onPressed: onOpenTerms),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Settings',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Customize your experience',
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 16),
+        // Settings cards
+        _SettingCard(
+          icon: Icons.brightness_6_rounded,
+          title: 'Appearance',
+          subtitle: 'Dark mode',
+          onTap: () {},
+        ),
+        const SizedBox(height: 12),
+        _SettingCard(
+          icon: Icons.motion_photos_on_rounded,
+          title: 'Motion',
+          subtitle: 'Bouncy animations',
+          onTap: () {},
+        ),
+        const SizedBox(height: 12),
+        _SettingCard(
+          icon: Icons.text_fields_rounded,
+          title: 'Text Size',
+          subtitle: 'Medium',
+          onTap: () {},
+        ),
+        const SizedBox(height: 20),
+        FilledButton.tonalIcon(
+          onPressed: onOpenTerms,
+          icon: const Icon(Icons.info_rounded),
+          label: const Text('Terms & Credits'),
+        ),
+      ],
     );
   }
 }
 
-class _SettingTile extends StatelessWidget {
-  const _SettingTile({
+class _SettingCard extends StatelessWidget {
+  const _SettingCard({
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -726,123 +1177,60 @@ class _SettingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        backgroundColor: const Color(0xFF1B7D3A).withOpacity(0.2),
-        child: Icon(icon, color: const Color(0xFFB6C1D6)),
-      ),
-      title: Text(title),
-      subtitle: Text(subtitle, style: const TextStyle(color: Color(0xFF9AA6BF))),
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFF9AA6BF)),
-      onTap: onTap,
-    );
-  }
-}
-
-class _RouteTile extends StatelessWidget {
-  const _RouteTile({required this.route});
-
-  final RouteInfo route;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
-        color: Colors.white.withOpacity(0.05),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 54,
-            height: 44,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFE066), Color(0xFFFFD43B)],
-              ),
-            ),
-            child: Center(
-              child: Text(
-                route.route,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1F2B),
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer
+                      .withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Route ${route.route} • ${route.origin} → ${route.destination}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelSmall
+                          ?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  route.via,
-                  style: const TextStyle(color: Color(0xFF9AA6BF), fontSize: 12),
-                ),
-                const SizedBox(height: 8),
-                _GhostButton(label: 'Open schedule PDF', onPressed: () {}),
-              ],
-            ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
-    );
-  }
-}
-
-class _CardContainer extends StatelessWidget {
-  const _CardContainer({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        color: Colors.white.withOpacity(0.06),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black45,
-            blurRadius: 30,
-            offset: Offset(0, 18),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        color: const Color(0xFF1B7D3A).withOpacity(0.2),
-        border: Border.all(color: const Color(0xFF1B7D3A).withOpacity(0.4)),
-      ),
-      child: Text(label, style: const TextStyle(fontSize: 12)),
     );
   }
 }
@@ -860,143 +1248,18 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          color: selected
-              ? const Color(0xFF1B7D3A).withOpacity(0.2)
-              : Colors.white.withOpacity(0.04),
-          border: Border.all(
+    return FilterChip(
+      selected: selected,
+      onSelected: (_) => onTap(),
+      label: Text(label),
+      backgroundColor:
+          Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+      labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: selected
-                ? const Color(0xFF1B7D3A).withOpacity(0.4)
-                : Colors.white.withOpacity(0.12),
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: selected ? Colors.white : const Color(0xFF9AA6BF),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrimaryButton extends StatelessWidget {
-  const _PrimaryButton({
-    required this.label,
-    required this.subtitle,
-    required this.onPressed,
-  });
-
-  final String label;
-  final String subtitle;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF1B7D3A),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      ),
-      onPressed: onPressed,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(label),
-            ],
-          ),
-          Text(
-            subtitle,
-            style: const TextStyle(color: Color(0xFFB6C1D6), fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TonalButton extends StatelessWidget {
-  const _TonalButton({required this.label, required this.onPressed, this.subtitle});
-
-  final String label;
-  final String? subtitle;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF1B7D3A).withOpacity(0.2),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      ),
-      onPressed: onPressed,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFD43B),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(label),
-            ],
-          ),
-          if (subtitle != null)
-            Text(
-              subtitle!,
-              style: const TextStyle(color: Color(0xFFB6C1D6), fontSize: 12),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GhostButton extends StatelessWidget {
-  const _GhostButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side: BorderSide(color: Colors.white.withOpacity(0.2)),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      ),
-      onPressed: onPressed,
-      child: Text(label),
     );
   }
 }
