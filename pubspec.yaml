@@ -35,6 +35,18 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Material Design 3 and animations
+  google_fonts: ^6.2.1
+
+  # PDF viewing capability
+  pdfx: ^2.5.0
+
+  # Advanced animations and transitions
+  animations: ^2.0.11
+
+  # Vector icons
+  font_awesome_flutter: ^10.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
